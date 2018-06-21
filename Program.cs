@@ -1,67 +1,75 @@
-﻿using System;
+﻿// ゲーム2周目以降、ディーラープレイヤーそれぞれの合計値に誤りがあるバグ
+
+using System;
 
 class Program
 {
     static int Main(string[] args)
     {
+        int pp = 0;
+        int dd = 0;
+        int cnt = 0;
         int[] suit = new int[52];
         int[] rank = new int[52];
-        int dd = 0;
-        int i;
-        bool flag = false;
 
-        Random r = new Random();
-
-
-        for (i = 0; i < 52; i++)
-        {
-            suit[i] = r.Next(4);
-            rank[i] = r.Next(13) + 1;
-            for (int j = 0; j < i; j++)
+        while (true)
+	    {
+            if (pp > 26) pp = 0;
+            if (pp == 0)
             {
-                if ((suit[j] == suit[i]) && (rank[j] == rank[i]))
-                {
-                    i--;
-                    dd++;
-                }
+                Sort(dd,cnt,suit,rank);
+                Console.WriteLine("新しいカードデッキに交換しました。");
             }
-        }
+
+            pp = Game(pp,dd,cnt,suit,rank);
+        
+            Console.WriteLine("なにかキーを押して続行");
+            Console.ReadKey();
+	    }
+        return 0;
+    }
+
+    //
+    static int Game(int pp,int dd,int cnt,int[] suit,int[] rank)
+    {
+        int i = 0;
+        int npp = pp;
 
         Console.WriteLine("ディーラー1枚目");
-        Card(0, suit, rank);
+        Card(0 + pp, suit, rank);
 
         Console.WriteLine("プレイヤー1枚目");
-        Card(1, suit, rank);
+        Card(1 + pp, suit, rank);
 
         Console.WriteLine("プレイヤー2枚目");
-        Card(3, suit, rank);
+        Card(3 + pp, suit, rank);
 
         int n = 1;
         int m = 2;
-        int d_sum = D_Calc(n, rank);
+        npp += 3;
+        int d_sum = D_Calc(pp, n, rank);
         Console.WriteLine("ディーラー合計");
         Console.WriteLine(d_sum);
-        int p_sum = P_Calc(m, rank);
+        int p_sum = P_Calc(pp, m, rank);
         Console.WriteLine("プレイヤー合計");
         Console.WriteLine(p_sum);
 
         while (true)
         {
-            i = 0;
-
-            Console.WriteLine("[1:ヒット][2:スタンド][999:終了]");
+            Console.WriteLine("[1:ヒット][2:スタンド]");
             while (true)
             {
                 int.TryParse(Console.ReadLine(), out i);
-                if (i == 1 || i == 2 || i == 999) break;
+                if (i == 1 || i == 2) break;
             }
 
             if (i == 1)
             {
                 m++;
+                npp++;
                 Console.WriteLine("プレイヤー"+m+"枚目");
-                Card(m * 2 - 1, suit, rank);
-                p_sum = P_Calc(m, rank);
+                Card(m * 2 - 1 + pp, suit, rank);
+                p_sum = P_Calc(pp, m, rank);
                 Console.WriteLine("プレイヤー合計");
                 Console.WriteLine(p_sum);
             }
@@ -70,16 +78,17 @@ class Program
                 while (true)
                 {
                     n++;
+                    npp++;
                     Console.WriteLine("ディーラー" + n + "枚目");
-                    Card(n * 2 - 2, suit, rank);
-                    d_sum = D_Calc(n, rank);
+                    Card(n * 2 - 2 + pp, suit, rank);
+                    d_sum = D_Calc(pp, n, rank);
                     Console.WriteLine("ディーラー合計");
                     Console.WriteLine(d_sum);
                     if (d_sum > 16) break;
                 }
             }
 
-            if (i == 2 || i == 999) break;
+            if (i == 2) break;
             if (p_sum > 21) break;
         }
 
@@ -104,10 +113,32 @@ class Program
         }
         else if (d_sum > 21)
             Console.WriteLine("ディーラーBUST!!プレイヤーWIN!!");
-        
-        return 0;
+
+        return npp;
     }
 
+
+    //
+    static void Sort(int dd,int cnt,int[] suit,int[] rank)
+    {
+        Random r = new Random();
+
+        for (cnt = 0; cnt < 52; cnt++)
+        {
+            suit[cnt] = r.Next(4);
+            rank[cnt] = r.Next(13) + 1;
+            for (int j = 0; j < cnt; j++)
+            {
+                if ((suit[j] == suit[cnt]) && (rank[j] == rank[cnt]))
+                {
+                    cnt--;
+                    dd++;
+                }
+        }
+    }
+    }
+
+    //
     static void Card(int i,int[] suit,int[] rank)
     {
         switch (suit[i])
@@ -138,14 +169,14 @@ class Program
         Console.ForegroundColor = ConsoleColor.White;
     }
 
-
-    static int D_Calc(int n, int[] rank)
+    //
+    static int D_Calc(int pp,int n, int[] rank)
     {
         int d_sum = 0;
 
         for (int i = 0; i < n; i++)
         {
-            switch (rank[i * 2])
+            switch (rank[i * 2 + pp])
             {
                 case 1:
                     if (d_sum < 11) d_sum += 11;
@@ -168,13 +199,14 @@ class Program
         return d_sum;
     }
 
-    static int P_Calc(int m, int[] rank)
+    //
+    static int P_Calc(int pp,int m, int[] rank)
     {
         int p_sum = 0;
 
         for (int i = 0; i < m; i++)
         {
-            switch (rank[i * 2 + 1])
+            switch (rank[i * 2 + 1 + pp])
             {
                 case 1:
                     if (p_sum < 11) p_sum += 11;
