@@ -7,28 +7,30 @@ class Program
         int pp = 0;
         int cnt = 0;
         bool flag = false;
+        bool stn = false;
+        bool nbj = false;
         int[] suit = new int[52];
         int[] rank = new int[52];
 
         while (true)
-	    {
+        {
             if (pp > 26) pp = 0;
             if (pp == 0)
             {
-                Sort(cnt,suit,rank);
+                Sort(cnt, suit, rank);
                 Console.WriteLine("新しいカードデッキに交換しました。");
             }
 
-            pp = Game(pp,cnt,suit,rank,flag);
-        
+            pp = Game(pp, cnt, suit, rank, flag, stn, nbj);
+
             Console.WriteLine("なにかキーを押して続行");
             Console.ReadKey();
-	    }
+        }
         return 0;
     }
 
     //
-    static int Game(int pp,int cnt,int[] suit,int[] rank,bool flag)
+    static int Game(int pp, int cnt, int[] suit, int[] rank, bool flag, bool stn, bool nbj)
     {
         int i = 0;
 
@@ -41,16 +43,18 @@ class Program
         Console.WriteLine("プレイヤー2枚目");
         Card(3 + pp, suit, rank);
 
-        int n = 0;
         int m = 0;
-        int d_sum = D_Calc(pp, m, n, rank, flag);
+        int n = 0;
+        int d_sum = D_Calc(pp, m, n, rank, stn);
         Console.WriteLine("ディーラー合計");
         Console.WriteLine(d_sum);
         int p_sum = P_Calc(pp, m, rank);
         Console.WriteLine("プレイヤー合計");
         Console.WriteLine(p_sum);
 
-        while (true)
+        if (p_sum == 21) nbj = true;
+
+        while (nbj == false)
         {
             Console.WriteLine("[1:ヒット][2:スタンド]");
             while (true)
@@ -70,30 +74,55 @@ class Program
             }
             else if (i == 2)
             {
-                flag = true;
+                stn = true;
                 Console.WriteLine("ディーラー2枚目");
                 Card(2 + pp, suit, rank);
-                d_sum = D_Calc(pp, m, n, rank, flag);
+                d_sum = D_Calc(pp, m, n, rank, stn);
                 Console.WriteLine("ディーラー合計");
                 Console.WriteLine(d_sum);
 
                 while (true)
                 {
-                    if (d_sum > 16) break;
+                    if (d_sum > 16 && d_sum > p_sum) break;
                     n++;
                     Console.WriteLine("ディーラー" + (n + 2) + "枚目");
                     Card(3 + pp + m + n, suit, rank);
-                    d_sum = D_Calc(pp, m, n, rank,flag);
+                    d_sum = D_Calc(pp, m, n, rank, stn);
                     Console.WriteLine("ディーラー合計");
                     Console.WriteLine(d_sum);
                 }
             }
 
+            if (i == 0) break;
             if (i == 2) break;
+            if (p_sum == 21) break;
             if (p_sum > 21) break;
         }
 
-        if (i == 1)
+        if (i == 0)
+        {
+            Console.WriteLine("ディーラー2枚目");
+            Card(2 + pp, suit, rank);
+            stn = true;
+            d_sum = D_Calc(pp, m, n, rank, stn);
+            Console.WriteLine("ディーラー合計");
+            Console.WriteLine(d_sum);
+
+            if (d_sum == 21)
+            {
+                Console.WriteLine("DRAW");
+            }
+            else
+            {
+                Console.WriteLine("プレイヤーWIN!!ナチュラルブラックジャック!!");
+            }
+
+        }
+        else if (i == 1 && p_sum == 21)
+        {
+            Console.WriteLine("プレイヤーWIN!!ブラックジャック!!");
+        }
+        else if (i == 1 && p_sum > 21)
         {
             Console.WriteLine("BUST!!ディーラーWIN!!");
         }
@@ -103,13 +132,17 @@ class Program
             {
                 Console.WriteLine("DRAW");
             }
-            else if(d_sum > p_sum)
+            else if (d_sum > p_sum)
             {
                 Console.WriteLine("ディーラーWIN!!");
             }
             else if (d_sum < p_sum)
             {
                 Console.WriteLine("プレイヤーWIN!!");
+                if (p_sum == 21)
+                {
+                    Console.WriteLine("ブラックジャック！");
+                }
             }
         }
         else if (d_sum > 21)
@@ -122,7 +155,7 @@ class Program
 
 
     //
-    static void Sort(int cnt,int[] suit,int[] rank)
+    static void Sort(int cnt, int[] suit, int[] rank)
     {
         Random r = new Random();
 
@@ -136,12 +169,12 @@ class Program
                 {
                     cnt--;
                 }
+            }
         }
-    }
     }
 
     //
-    static void Card(int i,int[] suit,int[] rank)
+    static void Card(int i, int[] suit, int[] rank)
     {
         switch (suit[i])
         {
@@ -172,47 +205,117 @@ class Program
     }
 
     //
-    static int P_Calc(int pp,int m, int[] rank)
+    static int P_Calc(int pp, int m, int[] rank)
     {
+        bool flag = false;
+
         int p_sum = 0;
 
-        p_sum = P_R_calc(1 + pp, rank, p_sum);
-        p_sum = P_R_calc(3 + pp, rank, p_sum);
+        p_sum = P_R_calc(1 + pp, rank, p_sum, flag);
+        p_sum = P_R_calc(3 + pp, rank, p_sum, flag);
 
         for (int i = 0; i < m; i++)
         {
-            p_sum = P_R_calc(3 + pp + i + 1, rank, p_sum);
+            p_sum = P_R_calc(3 + pp + i + 1, rank, p_sum, flag);
+        }
+
+        if (p_sum > 21)
+        {
+            if (rank[1 + pp] == 1 || rank[3 + pp] == 1)
+            {
+                flag = true;
+            }
+            for (int i = 0; i < m; i++)
+            {
+                if (rank[3 + pp + i + 1] == 1)
+                {
+                    flag = true;
+                }
+            }
+
+            if (flag == true)
+            {
+                p_sum = 0;
+                p_sum = P_R_calc(1 + pp, rank, p_sum, flag);
+                p_sum = P_R_calc(3 + pp, rank, p_sum, flag);
+
+                for (int i = 0; i < m; i++)
+                {
+                    p_sum = P_R_calc(3 + pp + i + 1, rank, p_sum, flag);
+                }
+            }
+
         }
         return p_sum;
     }
 
     //
-    static int D_Calc(int pp, int m, int n, int[] rank, bool flag)
+    static int D_Calc(int pp, int m, int n, int[] rank, bool stn)
     {
+        bool flag = false;
+
         int d_sum = 0;
 
-        d_sum = D_R_calc(0 + pp, rank, d_sum);
+        d_sum = D_R_calc(0 + pp, rank, d_sum, flag);
 
-        if (flag == true)
+        if (stn == true)
         {
-            d_sum = D_R_calc(2 + pp, rank, d_sum);
+            d_sum = D_R_calc(2 + pp, rank, d_sum, flag);
         }
 
         for (int i = 0; i < n; i++)
         {
-            d_sum = D_R_calc(3 + pp + m + i + 1, rank, d_sum);
+            d_sum = D_R_calc(3 + pp + m + i + 1, rank, d_sum, flag);
         }
+
+        if (d_sum > 21)
+        {
+            if (rank[0 + pp] == 1)
+            {
+                flag = true;
+            }
+            if (stn == true && rank[2 + pp] == 1)
+            {
+                flag = true;
+            }
+            for (int i = 0; i < m; i++)
+            {
+                if (rank[3 + pp + m + i + 1] == 1)
+                {
+                    flag = true;
+                }
+            }
+
+            if (flag == true)
+            {
+                d_sum = 0;
+
+                d_sum = D_R_calc(0 + pp, rank, d_sum, flag);
+
+                if (stn == true)
+                {
+                    d_sum = D_R_calc(2 + pp, rank, d_sum, flag);
+                }
+
+                for (int i = 0; i < n; i++)
+                {
+                    d_sum = D_R_calc(3 + pp + m + i + 1, rank, d_sum, flag);
+                }
+            }
+
+        }
+
         return d_sum;
     }
 
     //
-    static int P_R_calc(int j,int[] rank,int p_sum)
+    static int P_R_calc(int j, int[] rank, int p_sum, bool flag)
     {
         switch (rank[j])
         {
             case 1:
-                if (p_sum < 11) p_sum += 11;
-                else j = 1;
+                if (p_sum < 11 && flag == false) p_sum += 11;
+                else p_sum += 1;
                 break;
             case 11:
                 p_sum += 10;
@@ -231,13 +334,13 @@ class Program
     }
 
     //
-    static int D_R_calc(int j, int[] rank, int d_sum)
+    static int D_R_calc(int j, int[] rank, int d_sum, bool flag)
     {
         switch (rank[j])
         {
             case 1:
-                if (d_sum < 11) d_sum += 11;
-                else j = 1;
+                if (d_sum < 11 && flag == false) d_sum += 11;
+                else d_sum += 1;
                 break;
             case 11:
                 d_sum += 10;
